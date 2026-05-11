@@ -1,0 +1,432 @@
+import tkinter as tk
+from tkinter import messagebox
+
+
+# ---------------- FUNCIONES DE CÁLCULO ----------------
+
+def bolivianos_a_soles():
+    try:
+        bolivianos = float(entry_monto.get())
+        compra_usdt_bs = float(entry_compra_usdt_bs.get())
+        venta_usdt_soles = float(entry_venta_usdt_soles.get())
+        comision = float(entry_comision.get())
+
+        if bolivianos <= 0 or compra_usdt_bs <= 0 or venta_usdt_soles <= 0:
+            messagebox.showwarning("Advertencia", "El monto y los precios deben ser mayores a 0.")
+            return
+
+        if comision < 0:
+            messagebox.showwarning("Advertencia", "La comisión no puede ser negativa.")
+            return
+
+        usdt = bolivianos / compra_usdt_bs
+        soles_base = usdt * venta_usdt_soles
+
+        monto_comision = soles_base * (comision / 100)
+        soles_con_comision = soles_base + monto_comision
+
+        resultado.set(
+            f"Conversión de Bs a Soles:\n\n"
+            f"🇧🇴 Monto ingresado: Bs {bolivianos:.2f}\n"
+            f"💵 Equivalente: {usdt:.4f} USDT\n"
+            f"🇵🇪 Soles base: S/ {soles_base:.2f}\n\n"
+            f"💼 Comisión {comision:.2f}%: S/ {monto_comision:.2f}\n"
+            f"✅ Total a cobrar: S/ {soles_con_comision:.2f}"
+        )
+
+    except ValueError:
+        messagebox.showerror("Error", "Ingrese solo números válidos.")
+
+
+def soles_a_bolivianos():
+    try:
+        soles = float(entry_monto.get())
+        compra_usdt_bs = float(entry_compra_usdt_bs.get())
+        venta_usdt_soles = float(entry_venta_usdt_soles.get())
+        comision = float(entry_comision.get())
+
+        if soles <= 0 or compra_usdt_bs <= 0 or venta_usdt_soles <= 0:
+            messagebox.showwarning("Advertencia", "El monto y los precios deben ser mayores a 0.")
+            return
+
+        if comision < 0:
+            messagebox.showwarning("Advertencia", "La comisión no puede ser negativa.")
+            return
+
+        usdt = soles / venta_usdt_soles
+        bolivianos_base = usdt * compra_usdt_bs
+
+        monto_comision = bolivianos_base * (comision / 100)
+        bolivianos_con_comision = bolivianos_base + monto_comision
+
+        resultado.set(
+            f"Conversión de Soles a Bs:\n\n"
+            f"🇵🇪 Monto ingresado: S/ {soles:.2f}\n"
+            f"💵 Equivalente: {usdt:.4f} USDT\n"
+            f"🇧🇴 Bolivianos base: Bs {bolivianos_base:.2f}\n\n"
+            f"💼 Comisión {comision:.2f}%: Bs {monto_comision:.2f}\n"
+            f"✅ Total a cobrar: Bs {bolivianos_con_comision:.2f}"
+        )
+
+    except ValueError:
+        messagebox.showerror("Error", "Ingrese solo números válidos.")
+
+
+def limpiar():
+    entry_monto.delete(0, tk.END)
+    entry_compra_usdt_bs.delete(0, tk.END)
+    entry_venta_usdt_soles.delete(0, tk.END)
+    entry_comision.delete(0, tk.END)
+    entry_comision.insert(0, "0")
+    resultado.set("Resultado aparecerá aquí.")
+
+
+# ---------------- DISEÑO PERSONALIZADO ----------------
+
+def crear_rectangulo_redondeado(canvas, x1, y1, x2, y2, radio=25, color="#FFFFFF"):
+    puntos = [
+        x1 + radio, y1,
+        x2 - radio, y1,
+        x2, y1,
+        x2, y1 + radio,
+        x2, y2 - radio,
+        x2, y2,
+        x2 - radio, y2,
+        x1 + radio, y2,
+        x1, y2,
+        x1, y2 - radio,
+        x1, y1 + radio,
+        x1, y1
+    ]
+
+    return canvas.create_polygon(
+        puntos,
+        smooth=True,
+        fill=color,
+        outline=color
+    )
+
+
+class TarjetaRedondeada(tk.Canvas):
+    def __init__(self, parent, color="#FFFFFF", radio=30, **kwargs):
+        super().__init__(
+            parent,
+            bg=parent["bg"],
+            highlightthickness=0,
+            **kwargs
+        )
+        self.color = color
+        self.radio = radio
+        self.bind("<Configure>", self.dibujar)
+
+    def dibujar(self, event=None):
+        self.delete("all")
+        crear_rectangulo_redondeado(
+            self,
+            5,
+            5,
+            self.winfo_width() - 5,
+            self.winfo_height() - 5,
+            self.radio,
+            self.color
+        )
+
+
+class BotonRedondeado(tk.Canvas):
+    def __init__(
+        self,
+        parent,
+        texto,
+        color,
+        color_hover,
+        color_texto,
+        comando,
+        radio=30,
+        altura=52,
+        **kwargs
+    ):
+        super().__init__(
+            parent,
+            height=altura,
+            bg=parent["bg"],
+            highlightthickness=0,
+            cursor="hand2",
+            **kwargs
+        )
+
+        self.texto = texto
+        self.color = color
+        self.color_hover = color_hover
+        self.color_texto = color_texto
+        self.comando = comando
+        self.radio = radio
+
+        self.bind("<Configure>", self.dibujar)
+        self.bind("<Button-1>", lambda e: self.comando())
+        self.bind("<Enter>", self.hover)
+        self.bind("<Leave>", self.normal)
+
+    def dibujar(self, event=None, color_actual=None):
+        self.delete("all")
+
+        if color_actual is None:
+            color_actual = self.color
+
+        ancho = self.winfo_width()
+        alto = self.winfo_height()
+
+        crear_rectangulo_redondeado(
+            self,
+            3,
+            3,
+            ancho - 3,
+            alto - 3,
+            self.radio,
+            color_actual
+        )
+
+        self.create_text(
+            ancho / 2,
+            alto / 2,
+            text=self.texto,
+            fill=self.color_texto,
+            font=("Arial", 12, "bold")
+        )
+
+    def hover(self, event=None):
+        self.dibujar(color_actual=self.color_hover)
+
+    def normal(self, event=None):
+        self.dibujar(color_actual=self.color)
+
+
+def crear_entry(parent):
+    contenedor = tk.Frame(parent, bg="#FFFFFF")
+    contenedor.pack(fill="x", pady=(6, 14))
+
+    fondo_entry = TarjetaRedondeada(
+        contenedor,
+        color="#F3F4F6",
+        radio=22,
+        height=48
+    )
+    fondo_entry.pack(fill="x")
+
+    entrada = tk.Entry(
+        fondo_entry,
+        font=("Arial", 14),
+        justify="center",
+        bg="#F3F4F6",
+        fg="#111111",
+        relief="flat",
+        bd=0,
+        insertbackground="#111111"
+    )
+
+    entrada.place(
+        relx=0.5,
+        rely=0.5,
+        relwidth=0.90,
+        relheight=0.62,
+        anchor="center"
+    )
+
+    return entrada
+
+
+# ---------------- VENTANA PRINCIPAL ----------------
+
+ventana = tk.Tk()
+ventana.title("Calculadora Cambista Bs - USDT - Soles")
+ventana.geometry("720x800")
+ventana.minsize(560, 700)
+ventana.configure(bg="#111111")
+ventana.resizable(True, True)
+
+
+# ---------------- CONTENEDOR GENERAL ----------------
+
+contenedor_general = tk.Frame(ventana, bg="#111111")
+contenedor_general.pack(expand=True, fill="both")
+
+contenedor_general.grid_columnconfigure(0, weight=1)
+contenedor_general.grid_rowconfigure(0, weight=1)
+
+contenido_centrado = tk.Frame(contenedor_general, bg="#111111")
+contenido_centrado.grid(row=0, column=0, sticky="nsew", padx=30, pady=25)
+
+contenido_centrado.grid_columnconfigure(0, weight=1)
+contenido_centrado.grid_rowconfigure(1, weight=1)
+
+
+# ---------------- ENCABEZADO ----------------
+
+header = tk.Frame(contenido_centrado, bg="#111111")
+header.grid(row=0, column=0, sticky="ew", pady=(5, 20))
+
+tk.Label(
+    header,
+    text="Calculadora Cambista",
+    font=("Arial", 27, "bold"),
+    bg="#111111",
+    fg="#FFFFFF"
+).pack()
+
+tk.Label(
+    header,
+    text="Bs ⇄ USDT ⇄ Soles con comisión incluida",
+    font=("Arial", 13),
+    bg="#111111",
+    fg="#D1D5DB"
+).pack(pady=(6, 0))
+
+
+# ---------------- TARJETA PRINCIPAL ----------------
+
+tarjeta = TarjetaRedondeada(
+    contenido_centrado,
+    color="#FFFFFF",
+    radio=45
+)
+tarjeta.grid(row=1, column=0, sticky="nsew")
+
+contenido_tarjeta = tk.Frame(tarjeta, bg="#FFFFFF")
+contenido_tarjeta.place(
+    relx=0.5,
+    rely=0.5,
+    relwidth=0.88,
+    relheight=0.91,
+    anchor="center"
+)
+
+contenido_tarjeta.grid_columnconfigure(0, weight=1)
+
+
+# ---------------- CAMPOS DE ENTRADA ----------------
+
+tk.Label(
+    contenido_tarjeta,
+    text="Monto a convertir",
+    font=("Arial", 12, "bold"),
+    bg="#FFFFFF",
+    fg="#111111"
+).pack(anchor="w")
+
+entry_monto = crear_entry(contenido_tarjeta)
+
+
+tk.Label(
+    contenido_tarjeta,
+    text="Precio de compra de 1 USDT en Bolivianos",
+    font=("Arial", 12, "bold"),
+    bg="#FFFFFF",
+    fg="#111111"
+).pack(anchor="w")
+
+entry_compra_usdt_bs = crear_entry(contenido_tarjeta)
+
+
+tk.Label(
+    contenido_tarjeta,
+    text="Precio de venta de 1 USDT en Soles",
+    font=("Arial", 12, "bold"),
+    bg="#FFFFFF",
+    fg="#111111"
+).pack(anchor="w")
+
+entry_venta_usdt_soles = crear_entry(contenido_tarjeta)
+
+
+tk.Label(
+    contenido_tarjeta,
+    text="Porcentaje de comisión que cobra el cambista (%)",
+    font=("Arial", 12, "bold"),
+    bg="#FFFFFF",
+    fg="#111111"
+).pack(anchor="w")
+
+entry_comision = crear_entry(contenido_tarjeta)
+entry_comision.insert(0, "0")
+
+
+# ---------------- BOTONES REDONDEADOS BLANCO Y NEGRO ----------------
+
+frame_botones = tk.Frame(contenido_tarjeta, bg="#FFFFFF")
+frame_botones.pack(fill="x", pady=(12, 16))
+
+frame_botones.grid_columnconfigure(0, weight=1)
+frame_botones.grid_columnconfigure(1, weight=1)
+
+btn_bs_soles = BotonRedondeado(
+    frame_botones,
+    texto="Convertir Bs → Soles",
+    color="#111111",
+    color_hover="#333333",
+    color_texto="#FFFFFF",
+    comando=bolivianos_a_soles,
+    radio=30,
+    altura=56
+)
+btn_bs_soles.grid(row=0, column=0, sticky="ew", padx=8, pady=6)
+
+btn_soles_bs = BotonRedondeado(
+    frame_botones,
+    texto="Convertir Soles → Bs",
+    color="#F3F4F6",
+    color_hover="#E5E7EB",
+    color_texto="#111111",
+    comando=soles_a_bolivianos,
+    radio=30,
+    altura=56
+)
+btn_soles_bs.grid(row=0, column=1, sticky="ew", padx=8, pady=6)
+
+btn_limpiar = BotonRedondeado(
+    contenido_tarjeta,
+    texto="Limpiar datos",
+    color="#D1D5DB",
+    color_hover="#BFC3CA",
+    color_texto="#111111",
+    comando=limpiar,
+    radio=30,
+    altura=54
+)
+btn_limpiar.pack(fill="x", pady=(4, 12))
+
+
+# ---------------- RESULTADO REDONDEADO ----------------
+
+resultado = tk.StringVar()
+resultado.set("Resultado aparecerá aquí.")
+
+tarjeta_resultado = TarjetaRedondeada(
+    contenido_tarjeta,
+    color="#111111",
+    radio=35,
+    height=195
+)
+tarjeta_resultado.pack(fill="x", pady=(15, 10))
+
+label_resultado = tk.Label(
+    tarjeta_resultado,
+    textvariable=resultado,
+    font=("Arial", 13, "bold"),
+    justify="center",
+    bg="#111111",
+    fg="#FFFFFF"
+)
+label_resultado.place(relx=0.5, rely=0.5, anchor="center")
+
+
+# ---------------- NOTA FINAL ----------------
+
+tk.Label(
+    contenido_tarjeta,
+    text="La comisión se suma al monto final que debe pagar el cliente.",
+    font=("Arial", 10),
+    bg="#FFFFFF",
+    fg="#6B7280"
+).pack(pady=(10, 0))
+
+
+ventana.mainloop()
